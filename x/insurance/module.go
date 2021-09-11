@@ -2,25 +2,24 @@ package insurance
 
 import (
 	"encoding/json"
-
-	"github.com/gorilla/mux"
-	"github.com/spf13/cobra"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-
+	"github.com/alessia19/insurance/x/insurance/client/cli"
+	"github.com/alessia19/insurance/x/insurance/client/rest"
+	"github.com/alessia19/insurance/x/insurance/keeper"
+	"github.com/alessia19/insurance/x/insurance/types"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/alessia19/insurance/x/insurance/client/cli"
-	"github.com/alessia19/insurance/x/insurance/client/rest"
-	"github.com/alessia19/insurance/x/insurance/keeper"
+	"github.com/cosmos/cosmos-sdk/x/bank"
+	"github.com/gorilla/mux"
+	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // Type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule           = AppModule{}
-	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
 // AppModuleBasic defines the basic application module used by the insurance module.
@@ -64,7 +63,7 @@ func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command {
 
 // GetQueryCmd returns no root query command for the insurance module.
 func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(StoreKey, cdc)
+	return cli.GetQueryCmd(cdc)
 }
 
 //____________________________________________________________________________
@@ -73,16 +72,16 @@ func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 
-	keeper        keeper.Keeper
-	// TODO: Add keepers that your application depends on
+	keeper     keeper.Keeper
+	bankKeeper bank.Keeper
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(k keeper.Keeper, /*TODO: Add Keepers that your application depends on*/) AppModule {
+func NewAppModule(k keeper.Keeper, bankKeeper bank.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic:      AppModuleBasic{},
-		keeper:              k,
-		// TODO: Add keepers that your application depends on
+		AppModuleBasic: AppModuleBasic{},
+		keeper:         k,
+		bankKeeper:     bankKeeper,
 	}
 }
 
@@ -92,7 +91,9 @@ func (AppModule) Name() string {
 }
 
 // RegisterInvariants registers the insurance module invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+	keeper.RegisterInvariants(ir, am.keeper)
+}
 
 // Route returns the message routing key for the insurance module.
 func (AppModule) Route() string {
@@ -111,7 +112,7 @@ func (AppModule) QuerierRoute() string {
 
 // NewQuerierHandler returns the insurance module sdk.Querier.
 func (am AppModule) NewQuerierHandler() sdk.Querier {
-	return types.NewQuerier(am.keeper)
+	return NewQuerier(am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the insurance module. It returns

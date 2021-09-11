@@ -2,23 +2,17 @@ package cli
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/spf13/cobra"
-
+	"github.com/alessia19/insurance/x/insurance/types"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/alessia19/insurance/x/insurance/types"
+	"github.com/spf13/cobra"
 )
 
 // GetQueryCmd returns the cli query commands for this module
-func GetQueryCmd(queryRoute string, cdc *codec.Codec) *cobra.Command {
-	// Group insurance queries under a subcommand
-	insuranceQueryCmd := &cobra.Command{
+func GetQueryCmd(cdc *codec.Codec) *cobra.Command {
+
+	cmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      fmt.Sprintf("Querying commands for the %s module", types.ModuleName),
 		DisableFlagParsing:         true,
@@ -26,13 +20,35 @@ func GetQueryCmd(queryRoute string, cdc *codec.Codec) *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	insuranceQueryCmd.AddCommand(
-		flags.GetCommands(
-	// TODO: Add query Cmds
-		)...,
+	cmd.AddCommand(
+		getAllInsurances(cdc),
 	)
 
-	return insuranceQueryCmd
+	return cmd
 }
 
-// TODO: Add Query Commands
+func getAllInsurances(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "get-insurances",
+		Short: "Get all the insurances",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return getAllInsurancesFunc(cmd, args, cdc)
+		},
+	}
+}
+
+func getAllInsurancesFunc(cmd *cobra.Command, args []string, cdc *codec.Codec) error {
+	cliCtx := context.NewCLIContext().WithCodec(cdc)
+
+	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryAllInsurance)
+	res, _, err := cliCtx.QueryWithData(route, nil)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(res))
+
+	return nil
+}

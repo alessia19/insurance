@@ -1,9 +1,8 @@
 package insurance
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/alessia19/insurance/x/insurance/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis initialize default parameters

@@ -2,39 +2,30 @@ package keeper
 
 import (
 	"fmt"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/alessia19/insurance/x/insurance/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/alessia19/insurance/x/insurance/types"
+	sdkErr "github.com/cosmos/cosmos-sdk/types/errors"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // NewQuerier creates a new querier for insurance clients.
-func NewQuerier(k Keeper) sdk.Querier {
+func NewQuerier(keeper Keeper) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
 		switch path[0] {
-		case types.QueryParams:
-			return queryParams(ctx, k)
-			// TODO: Put the modules query routes
+		case types.QueryAllInsurance:
+			return queryGetAllInsurance(ctx, path[1:], keeper)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown insurance query endpoint")
+			return nil, sdkErr.Wrap(sdkErr.ErrUnknownRequest, fmt.Sprintf("Unknown %s query endpoint", types.ModuleName))
 		}
 	}
 }
 
-func queryParams(ctx sdk.Context, k Keeper) ([]byte, error) {
-	params := k.GetParams(ctx)
-
-	res, err := codec.MarshalJSONIndent(types.ModuleCdc, params)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+func queryGetAllInsurance(ctx sdk.Context, _ []string, keeper Keeper) ([]byte, error) {
+	bz, err2 := codec.MarshalJSONIndent(keeper.cdc, keeper.GetAllInsurance(ctx))
+	if err2 != nil {
+		return nil, sdkErr.Wrap(sdkErr.ErrUnknownRequest, "Could not marshal result to JSON")
 	}
 
-	return res, nil
+	return bz, nil
 }
-
-// TODO: Add the modules query functions
-// They will be similar to the above one: queryParams()
